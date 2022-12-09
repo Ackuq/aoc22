@@ -1,9 +1,16 @@
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
-def get_input(day: int, example: bool = False, strip: bool = False) -> List[str]:
-    name = day if not example else f"{day}_example"
+def get_input(
+    day: int,
+    example: bool = False,
+    example_num: Optional[int] = None,
+    strip: bool = False,
+) -> List[str]:
+    name = f"{day}" if not example else f"{day}_example"
+    if example_num is not None:
+        name += f"_{example_num}"
     f = open(f"./inputs/{name}.txt")
     lines = f.readlines()
     if strip:
