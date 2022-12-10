@@ -1,49 +1,8 @@
-from enum import Enum
 from typing import List, Tuple
 
 from utils import get_input
 
-
-class Direction(Enum):
-    Up = "U"
-    Right = "R"
-    Down = "D"
-    Left = "L"
-
-
 Coordinate = Tuple[int, int]
-
-
-class Snake:
-    def __init__(self) -> None:
-        self.head: Coordinate = (0, 0)
-        self.tail: Coordinate = (0, 0)
-        self.tail_history: List[Coordinate] = [(0, 0)]
-
-    def _tail_should_move(self) -> bool:
-        # Tail must always be adjacent to head
-        return (
-            True
-            if abs(self.head[0] - self.tail[0]) > 1
-            or abs(self.head[1] - self.tail[1]) > 1
-            else False
-        )
-
-    def move(self, direction: Direction) -> None:
-        old_head = self.head
-        if direction is Direction.Up:
-            self.head = (self.head[0], self.head[1] + 1)
-        elif direction is Direction.Down:
-            self.head = (self.head[0], self.head[1] - 1)
-        elif direction is Direction.Right:
-            self.head = (self.head[0] + 1, self.head[1])
-        elif direction is Direction.Left:
-            self.head = (self.head[0] - 1, self.head[1])
-
-        if self._tail_should_move():
-            self.tail = old_head
-            if self.tail not in self.tail_history:
-                self.tail_history.append(self.tail)
 
 
 class Tail:
@@ -96,37 +55,37 @@ class Head:
         self.coordinates: Coordinate = (0, 0)
         self.tail = Tail(length)
 
-    def move(self, direction: Direction) -> None:
-        if direction is Direction.Up:
+    def move(self, direction: str) -> None:
+        if direction == "U":
             self.coordinates = (self.coordinates[0], self.coordinates[1] + 1)
-        elif direction is Direction.Down:
+        elif direction == "D":
             self.coordinates = (self.coordinates[0], self.coordinates[1] - 1)
-        elif direction is Direction.Right:
+        elif direction == "R":
             self.coordinates = (self.coordinates[0] + 1, self.coordinates[1])
-        elif direction is Direction.Left:
+        elif direction == "L":
             self.coordinates = (self.coordinates[0] - 1, self.coordinates[1])
 
         self.tail.move(self.coordinates)
 
 
-Command = Tuple[Direction, int]
+Command = Tuple[str, int]
 
 
 def parse_input(input: List[str]) -> List[Command]:
     result: List[Command] = []
     for line in input:
         direction, times = line.split(" ")
-        result.append((Direction(direction), int(times)))
+        result.append((direction, int(times)))
     return result
 
 
 def main(input: List[str]) -> None:
     commands = parse_input(input)
-    snake = Snake()
+    snake = Head(1)
     for direction, times in commands:
         for _ in range(times):
             snake.move(direction)
-    print(f"Part 1 {len(snake.tail_history)}")
+    print(f"Part 1 {len(snake.tail.tail_history)}")
 
     head = Head(9)
     for direction, times in commands:
