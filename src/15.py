@@ -7,12 +7,12 @@ REGEX = r"Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\
 
 Coord = Tuple[int, int]
 
-Mapping = Dict[Coord, float]
+Mapping = Dict[Coord, int]
 Beacons = Set[Coord]
 
 
-def manhattan(a: Coord, b: Coord) -> float:
-    return abs((a[0] - b[0])) + abs(a[1] - b[1])
+def manhattan(a: Coord, b: Coord) -> int:
+    return int(abs((a[0] - b[0])) + abs(a[1] - b[1]))
 
 
 def parse_input(input: List[str]) -> Tuple[Mapping, Beacons]:
@@ -34,20 +34,62 @@ def is_shorter(possible: Coord, sensor: Coord, old_dist: float) -> bool:
     return new_dist <= old_dist
 
 
+def add_invalid(y: int, mapping: Mapping, beacons: Beacons) -> Set[Coord]:
+    invalid: Set[Coord] = set()
+    for sensor, dist in mapping.items():
+        radius_y = int(abs(sensor[1] - y))
+        max_radius_x = dist - radius_y
+        if max_radius_x >= 0:
+            for dx in range(-max_radius_x, max_radius_x + 1):
+                dest = (sensor[0] + dx, y)
+                if dest not in beacons:
+                    invalid.add(dest)
+    return invalid
+
+
+def add_invalid2(
+    y: int, mapping: Mapping, beacons: Beacons, maximum: int
+) -> Set[Coord]:
+    invalid: Set[Coord] = set()
+    for sensor, dist in mapping.items():
+        if len(invalid) == maximum - 1:
+            break
+        radius_y = int(abs(sensor[1] - y))
+        max_radius_x = dist - radius_y
+        if max_radius_x >= 0:
+            minimum = max(0, sensor[0] - max_radius_x)
+            maximum_i = min(maximum, max_radius_x + sensor[0])
+            invalid.add((minimum, maximum_i))
+    return invalid
+
+
 def main(input: List[str]) -> None:
     mapping, beacons = parse_input(input)
+    # row_to_check = 10
     row_to_check = 2000000
-    not_possible = 0
-    for x in range(-1_000_000, 5_000_000):
-        possible_beacon = (x, row_to_check)
-        if possible_beacon in beacons:
-            continue
-        for prev, current in mapping.items():
-            if is_shorter(possible_beacon, prev, current):
-                not_possible += 1
-                break
+    invalid: Set[Coord] = add_invalid(row_to_check, mapping, beacons)
 
-    print(f"Part 1 {not_possible}")
+    # print(f"Part 1 {len(invalid)}")
+
+    maximum = 4000000
+    # maximum = 20
+    multiply = 4000000
+    found = False
+    last_x = 0
+    for y in range(maximum + 1):
+        invalid = add_invalid2(y, mapping, beacons, maximum)
+        last_x = 0
+        for x_range in sorted(invalid):
+            min_x, max_x = x_range
+            if last_x < min_x:
+                found = True
+                break
+            if max_x >= last_x:
+                last_x = max_x + 1
+        if found:
+            break
+
+    print(f"Part 2 {last_x * multiply + y}")
 
 
 if __name__ == "__main__":
