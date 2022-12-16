@@ -39,7 +39,7 @@ def main(input: List[str]) -> None:
         if time <= 0:
             return 0
         pressures: Set[int] = set()
-        if current not in opened:
+        if current not in opened and rates[current] != 0:
             pressures.add(
                 find_max_pressure(
                     current,
@@ -58,4 +58,4 @@ def main(input: List[str]) -> None:
 
 
 if __name__ == "__main__":
-    main(get_input(16, False, strip=True))
+    main(get_input(16, True, strip=True))
