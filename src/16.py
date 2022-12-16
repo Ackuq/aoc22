@@ -1,11 +1,12 @@
 import re
-from typing import Dict, List, Tuple
+from functools import cache
+from typing import Dict, FrozenSet, List, Set, Tuple
 
 from utils import get_input
 
 Valve = str
 
-Mappings = Dict[Valve, List[Valve]]
+Mappings = Dict[Valve, Set[Valve]]
 Rates = Dict[Valve, int]
 
 INPUT_RE = "Valve (.*) has flow rate=(.*); tunnels? leads? to valves? (.*)"
@@ -18,7 +19,7 @@ def parse_input(input: List[str]) -> Tuple[Mappings, Rates]:
         match = re.search(INPUT_RE, line)
         assert match is not None
         valve, rate_str, to_str = match.groups()
-        to = [v for v in to_str.split(", ")]
+        to = set([v for v in to_str.split(", ")])
         rate = int(rate_str)
         mappings[valve] = to
         rates[valve] = rate
@@ -28,6 +29,30 @@ def parse_input(input: List[str]) -> Tuple[Mappings, Rates]:
 
 def main(input: List[str]) -> None:
     mappings, rates = parse_input(input)
+
+    @cache
+    def find_max_pressure(
+        current: str,
+        opened: FrozenSet[Valve] = frozenset(),
+        time: int = 30,
+    ) -> int:
+        if time < 0:
+            return 0
+        pressures: List[int] = []
+        if current not in opened:
+            pressures.append(
+                find_max_pressure(current, opened.union(frozenset(current)), time - 1)
+            )
+            pressures[0] = pressures[0] + rates[current] * time
+        tunnels = mappings[current]
+        pressures = pressures + [
+            find_max_pressure(tunnel, opened, time - 1) for tunnel in tunnels
+        ]
+        best_pressure = max(pressures)
+        return best_pressure
+
+    print(find_max_pressure("AA"))
+
     print(mappings)
     print(rates)
 
