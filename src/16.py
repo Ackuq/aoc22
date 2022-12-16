@@ -36,26 +36,26 @@ def main(input: List[str]) -> None:
         opened: FrozenSet[Valve] = frozenset(),
         time: int = 30,
     ) -> int:
-        if time < 0:
+        if time <= 0:
             return 0
-        pressures: List[int] = []
+        pressures: Set[int] = set()
         if current not in opened:
-            pressures.append(
-                find_max_pressure(current, opened.union(frozenset(current)), time - 1)
+            pressures.add(
+                find_max_pressure(
+                    current,
+                    opened.union(frozenset([current])),
+                    time - 1,
+                )
+                + rates[current] * (time - 1)
             )
-            pressures[0] = pressures[0] + rates[current] * time
-        tunnels = mappings[current]
-        pressures = pressures + [
-            find_max_pressure(tunnel, opened, time - 1) for tunnel in tunnels
-        ]
+        pressures = pressures.union(
+            find_max_pressure(tunnel, opened, time - 1) for tunnel in mappings[current]
+        )
         best_pressure = max(pressures)
         return best_pressure
 
-    print(find_max_pressure("AA"))
-
-    print(mappings)
-    print(rates)
+    print(f"Part 1: {find_max_pressure('AA')}")
 
 
 if __name__ == "__main__":
-    main(get_input(16, True, strip=True))
+    main(get_input(16, False, strip=True))
