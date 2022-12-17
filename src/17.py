@@ -1,5 +1,7 @@
 from typing import Generator, List, Set, Tuple
 
+from tqdm import tqdm
+
 from utils import get_input
 
 MAX_X = 6
@@ -73,23 +75,22 @@ def run(max_rocks: int, moves: str) -> int:
     rock_generator = get_rock_generator()
     move_generator = get_move_generator(moves)
     max_y = 0
-
+    progress_bar = tqdm(total=max_rocks)
     while fallen_rocks < max_rocks:
         current_rock = next(rock_generator)
         current_rock = set([(x, y + max_y + 3) for x, y in current_rock])
-        while True:
+
+        current_move = next(move_generator)
+        current_rock = do_move(current_rock, current_move, occupied)
+        while not is_done(current_rock, occupied):
+            current_rock = set([(x, y - 1) for x, y in current_rock])
             current_move = next(move_generator)
             current_rock = do_move(current_rock, current_move, occupied)
-            # Check if we are done
-            if is_done(current_rock, occupied):
-                break
-            # Move 1 down
-            current_rock = set([(x, y - 1) for x, y in current_rock])
-            # print("\nMoves down")
 
         max_y = max(max_y, *(y + 1 for _, y in current_rock))
         occupied.update(current_rock)
         fallen_rocks += 1
+        progress_bar.update(1)
     return max_y
 
 
