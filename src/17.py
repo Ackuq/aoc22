@@ -1,7 +1,5 @@
 from typing import Generator, List, Set, Tuple
 
-from tqdm import tqdm
-
 from utils import get_input
 
 MAX_X = 6
@@ -69,13 +67,12 @@ def do_move(current_rock: Rock, current_move: str, occupied: Set[Coord]) -> Rock
     return new_rock
 
 
-def run(max_rocks: int, moves: str) -> int:
+def part1(max_rocks: int, moves: str) -> int:
     occupied: Set[Coord] = set()
     fallen_rocks = 0
     rock_generator = get_rock_generator()
     move_generator = get_move_generator(moves)
     max_y = 0
-    progress_bar = tqdm(total=max_rocks)
     while fallen_rocks < max_rocks:
         current_rock = next(rock_generator)
         current_rock = set([(x, y + max_y + 3) for x, y in current_rock])
@@ -90,16 +87,66 @@ def run(max_rocks: int, moves: str) -> int:
         max_y = max(max_y, *(y + 1 for _, y in current_rock))
         occupied.update(current_rock)
         fallen_rocks += 1
-        progress_bar.update(1)
     return max_y
 
 
+def find_pattern(heights: List[int]) -> Tuple[int, List[int]]:
+    # Try to find the shortest repeating pattern
+    max_pattern_length = len(heights) // 2
+    for pattern_length in range(2, max_pattern_length):
+        for i in range(0, len(heights) - pattern_length):
+            window = heights[i : i + pattern_length]
+            duplicates = 0
+            next_start = i + pattern_length
+            next_stop = next_start + pattern_length
+            while window == heights[next_start:next_stop]:
+                duplicates += 1
+                if duplicates >= 3:
+                    return i, window
+                next_start, next_stop = (
+                    next_start + pattern_length,
+                    next_stop + pattern_length,
+                )
+    raise Exception("No pattern found")
+
+
+def part2(moves: str) -> int:
+    occupied: Set[Coord] = set()
+    fallen_rocks = 0
+    rock_generator = get_rock_generator()
+    move_generator = get_move_generator(moves)
+    max_y = 0
+    height_changes: List[int] = []
+
+    while fallen_rocks < 20_000:
+        current_rock = next(rock_generator)
+        current_rock = set([(x, y + max_y + 3) for x, y in current_rock])
+
+        current_move = next(move_generator)
+        current_rock = do_move(current_rock, current_move, occupied)
+        while not is_done(current_rock, occupied):
+            current_rock = set([(x, y - 1) for x, y in current_rock])
+            current_move = next(move_generator)
+            current_rock = do_move(current_rock, current_move, occupied)
+
+        new_max = max(max_y, *(y + 1 for _, y in current_rock))
+        height_changes.append(new_max - max_y)
+        max_y = new_max
+        occupied.update(current_rock)
+        fallen_rocks += 1
+    # Find a pattern using the height changes
+    start, window = find_pattern(height_changes)
+    left = sum(height_changes[:start])
+    middle, right = divmod(1_000_000_000_000 - start, len(window))
+    middle = middle * sum(window)
+    right = sum(window[:right])
+    return left + middle + right
+
+
 def main(input: List[str]) -> None:
-    part1 = run(2022, input[0])
-    print(f"Part 1: {part1}")
-    part2 = run(1_000_000_000, input[0])
-    print(f"Part 2: {part2}")
+    print(f"Part 1: {part1(2022, input[0])}")
+    print(f"Part 2: {part2(input[0])}")
 
 
 if __name__ == "__main__":
-    main(get_input(17, True, strip=True))
+    main(get_input(17, False, strip=True))
