@@ -8,7 +8,7 @@ from utils import get_input
 Value = int | Tuple[str, str, str]  # left, operator, right
 
 Mappings = frozendict[str, Value]
-ReducedMappings = Dict[str, Value]
+ReducedMappings = Dict[str, float]
 
 
 def parse_input(input: List[str], part2: bool = False, offset: int = 0) -> Mappings:
@@ -22,23 +22,23 @@ def parse_input(input: List[str], part2: bool = False, offset: int = 0) -> Mappi
             continue
         left, operator, right = value.split()
         if part2 and key == "root":
-            mappings[key] = (left, "==", right)
+            mappings[key] = (left, "-", right)
             continue
         mappings[key] = (left, operator, right)
     return frozendict(mappings)
 
 
 @cache
-def reduce_value(mappings: Mappings, value: Value) -> int:
+def reduce_value(mappings: Mappings, value: Value) -> float:
     if isinstance(value, int):
         return value
     left_str, operator, right_str = value
     left = reduce_value(mappings, mappings[left_str])
     right = reduce_value(mappings, mappings[right_str])
-    return int(eval(f"{left} {operator} {right}"))
+    return cast(float, eval(f"{left} {operator} {right}"))
 
 
-def reduce_mappings(mappings: Mappings) -> int:
+def reduce_mappings(mappings: Mappings) -> float:
     reduced_mappings: ReducedMappings = {}
     for key, value in mappings.items():
         reduced_mappings[key] = reduce_value(mappings, value)
@@ -51,13 +51,17 @@ def main(input: List[str]) -> None:
     print(f"Part 1: {reduced}")
     mappings = parse_input(input, True)
     reduced = reduce_mappings(mappings)
-    offset = 0
-    while reduced == 0:
-        offset += 1
-        mappings = parse_input(input, True, -offset)
-        reduced = reduce_mappings(mappings)
-        if reduced == 1:
-            break
+    offset = 1
+    # Adjust weight and condition for the problem
+    weight = 0.1
+    while reduced != 0:
+        # Adjust these expressions to the problem
+        if reduced > 0:
+            offset += int(reduced * weight) + 1
+        else:
+            offset -= int(reduced * weight) - 1
+        if weight > 0:
+            weight -= 0.0001
         mappings = parse_input(input, True, offset)
         reduced = reduce_mappings(mappings)
     print(f"Part 2: {mappings['humn']}")
