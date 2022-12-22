@@ -1,3 +1,4 @@
+import math
 import re
 from typing import Dict, List, Set, Tuple
 
@@ -5,6 +6,7 @@ from utils import get_input
 
 Coord = Tuple[int, int]
 Instruction = int | str
+Regions = Dict[int, Tuple[Set[Coord], Coord]]
 
 instruction_re = r"(\d+|R|L)"
 
@@ -37,7 +39,11 @@ def turn(current: Coord, direction: str) -> Coord:
 
 
 def move_monkey(
-    monkey: Coord, direction: Coord, times: int, free: Set[Coord], blocked: Set[Coord]
+    monkey: Coord,
+    direction: Coord,
+    times: int,
+    free: Set[Coord],
+    blocked: Set[Coord],
 ) -> Coord:
     current_monkey = monkey
     for _ in range(times):
@@ -71,6 +77,119 @@ def move_monkey(
                 break
             next_monkey = possible_next_monkey
     return current_monkey
+
+
+def next_coord(
+    monkey: Coord, direction: Coord, regions: Regions, region_size: int
+) -> Tuple[Coord, Coord]:
+    region_offset = region_size - 1
+    normalized_x = monkey[0] % region_size
+    normalized_y = monkey[1] % region_size
+    # Dirty solution, calculated by hand
+    if monkey in regions[1][0]:
+        if direction == (-1, 0):
+            start_x, start_y = regions[4][1]
+            # Wraps to 4 left side, y coords gets flipped
+            return (start_x, start_y + region_offset - normalized_y), (1, 0)
+        if direction == (0, -1):
+            start_x, start_y = regions[6][1]
+            # Wraps to 6 left side
+            return (start_x, start_y + normalized_x), (1, 0)
+    if monkey in regions[2][0]:
+        if direction == (0, -1):
+            start_x, start_y = regions[6][1]
+            # Wraps to 6 bottom side
+            return (start_x + normalized_x, start_y + region_offset), (0, -1)
+        if direction == (1, 0):
+            start_x, start_y = regions[5][1]
+            # Wraps to 5 right side
+            return (start_x + region_offset, start_y + region_offset - normalized_y), (
+                -1,
+                0,
+            )
+        if direction == (0, 1):
+            start_x, start_y = regions[3][1]
+            # Wraps to 3 right side
+            return (start_x + region_offset, start_y + normalized_x), (-1, 0)
+    if monkey in regions[3][0]:
+        if direction == (1, 0):
+            start_x, start_y = regions[2][1]
+            # Wraps to 2 bottom side
+            return (start_x + normalized_y, start_y + region_offset), (0, -1)
+        if direction == (-1, 0):
+            # Wraps to 4 top side
+            start_x, start_y = regions[4][1]
+            return (start_x + normalized_y, start_y), (0, 1)
+    if monkey in regions[4][0]:
+        if direction == (0, -1):
+            start_x, start_y = regions[3][1]
+            # Wraps to 3 left side
+            return (start_x, start_y + normalized_x), (1, 0)
+        if direction == (-1, 0):
+            # Wraps to 1 left side
+            start_x, start_y = regions[1][1]
+            return (start_x, start_y + region_offset - normalized_y), (1, 0)
+    if monkey in regions[5][0]:
+        if direction == (1, 0):
+            start_x, start_y = regions[2][1]
+            # Wraps to 2 right side
+            return (start_x + region_offset, start_y + region_offset - normalized_y), (
+                -1,
+                0,
+            )
+        if direction == (0, 1):
+            # Wraps to 6 right side
+            start_x, start_y = regions[6][1]
+            return (start_x + region_offset, start_y + normalized_x), (-1, 0)
+    if monkey in regions[6][0]:
+        if direction == (-1, 0):
+            start_x, start_y = regions[1][1]
+            # Wraps to 1 top side
+            return (start_x + normalized_y, start_y), (0, 1)
+        if direction == (0, 1):
+            # Wraps to 2 top side
+            start_x, start_y = regions[2][1]
+            return (start_x + normalized_x, start_y), (0, 1)
+        if direction == (1, 0):
+            # Wraps to 5 bottom side
+            start_x, start_y = regions[5][1]
+            return (start_x + normalized_y, start_y + region_offset), (0, -1)
+    raise Exception("Should not happen")
+
+
+def move_monkey2(
+    monkey: Coord,
+    direction: Coord,
+    times: int,
+    free: Set[Coord],
+    blocked: Set[Coord],
+    regions: Regions,
+    region_size: int,
+) -> Tuple[Coord, Coord]:
+    current_monkey = monkey
+    current_direction = direction
+    for _ in range(times):
+        next_monkey = (
+            current_monkey[0] + direction[0],
+            current_monkey[1] + direction[1],
+        )
+        if next_monkey in free:
+            # Move forwards
+            current_monkey = next_monkey
+            continue
+        if next_monkey in blocked:
+            # Break
+            break
+        # Else we must wrap, move opposite of current direction until last is
+        # found
+        next_monkey, next_direction = next_coord(
+            current_monkey, direction, regions, region_size
+        )
+        if next_monkey in blocked:
+            break
+        current_monkey = next_monkey
+        current_direction = next_direction
+    return current_monkey, current_direction
 
 
 def print_grid(
@@ -118,7 +237,8 @@ def main(input: List[str]) -> None:
     free, blocked, instructions, max_x, max_y = parse_input(input)
     min_y = min(y for _, y in free)
     top_row = ((x, y) for x, y in free if y == min_y)
-    monkey = sorted(top_row, key=lambda a: a[0])[0]  # Lowest y with the lowest x
+    start = sorted(top_row, key=lambda a: a[0])[0]  # Lowest y with the lowest x
+    monkey = start
     direction = (1, 0)
     for instruction in instructions:
         # print_grid(monkey, direction, free, blocked, max_x, max_y)
@@ -130,7 +250,43 @@ def main(input: List[str]) -> None:
     part1 = (
         ((monkey[0] + 1) * 4) + ((monkey[1] + 1) * 1000) + direction_score[direction]
     )
-    print(f"Part 1 {part1}")
+    print(f"Part 1: {part1}")
+    # Divide grid into parts 1-6
+    # Determine size of each region
+    # Size = region_size ^ 2
+    all_points = free.union(blocked)
+    region_size = int(math.sqrt((len(all_points)) // 6))
+    current_region = 1
+    regions: Regions = {}
+    for y_i in range(0, max_y, region_size):
+        for x_i in range(0, max_x, region_size):
+            if (x_i, y_i) in all_points:
+                regions[current_region] = (
+                    set(
+                        (x, y)
+                        for x, y in all_points
+                        if x >= x_i
+                        and x < x_i + region_size
+                        and y >= y_i
+                        and y < y_i + region_size
+                    ),
+                    (x_i, y_i),
+                )
+                current_region += 1
+    monkey = start
+    direction = (1, 0)
+    for instruction in instructions:
+        if isinstance(instruction, int):
+            monkey, direction = move_monkey2(
+                monkey, direction, instruction, free, blocked, regions, region_size
+            )
+            continue
+        # Turn
+        direction = turn(direction, instruction)
+    part2 = (
+        ((monkey[0] + 1) * 4) + ((monkey[1] + 1) * 1000) + direction_score[direction]
+    )
+    print(f"Part 2: {part2}")
 
 
 if __name__ == "__main__":
