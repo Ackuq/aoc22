@@ -154,6 +154,8 @@ def next_coord(
             # Wraps to 5 bottom side
             start_x, start_y = regions[5][1]
             return (start_x + normalized_y, start_y + region_offset), (0, -1)
+    print(monkey)
+    print(direction)
     raise Exception("Should not happen")
 
 
@@ -170,8 +172,8 @@ def move_monkey2(
     current_direction = direction
     for _ in range(times):
         next_monkey = (
-            current_monkey[0] + direction[0],
-            current_monkey[1] + direction[1],
+            current_monkey[0] + current_direction[0],
+            current_monkey[1] + current_direction[1],
         )
         if next_monkey in free:
             # Move forwards
@@ -183,7 +185,7 @@ def move_monkey2(
         # Else we must wrap, move opposite of current direction until last is
         # found
         next_monkey, next_direction = next_coord(
-            current_monkey, direction, regions, region_size
+            current_monkey, current_direction, regions, region_size
         )
         if next_monkey in blocked:
             break
