@@ -1,3 +1,4 @@
+import sys
 from itertools import chain
 from typing import Dict, List, Set, Tuple
 
@@ -94,14 +95,15 @@ def get_empty(elves: Elves) -> int:
     return empty
 
 
-def main(input: List[str]) -> None:
+def run(input: List[str], times: int = sys.maxsize, part2: bool = False) -> int:
     elves = parse_input(input)
     order = ["N", "S", "W", "E"]
-    for i in range(10):
+    for round in range(times):
         transitions: Transitions = {}
         for elf in elves:
             next_move = next_coord(elf, elves, order)
             transitions[elf] = next_move
+
         # Move direction order dict
         first = order.pop(0)
         order.append(first)
@@ -118,10 +120,17 @@ def main(input: List[str]) -> None:
         for key in keys_with_duplicates:
             # Make these not move
             transitions[key] = key
+        if part2 and all(key == value for key, value in transitions.items()):
+            return round + 1
         elves = set(transitions.values())
         # print_elves(elves, i + 1)
-    print(f"Part 1 {get_empty(elves)}")
+    return get_empty(elves)
+
+
+def main(input: List[str]) -> None:
+    print(f"Part 1: {run(input, 10)}")
+    print(f"Part 2: {run(input, part2=True)}")
 
 
 if __name__ == "__main__":
-    main(get_input(23, False, strip=True))
+    main(get_input(23, strip=True))
