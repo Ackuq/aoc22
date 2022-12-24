@@ -1,5 +1,4 @@
-from functools import cache
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 from utils import get_input
 
@@ -25,7 +24,27 @@ def parse_input(input: List[str]) -> Blizzards:
     return frozenset(blizzards)
 
 
-@cache
+def print_map(current: Coord, blizzards: Blizzards, max_x: int, max_y: int) -> None:
+    print("Grid time")
+    for y in range(max_y):
+        line = ""
+        for x in range(max_x):
+            coord = (x, y)
+            if current == coord:
+                line += "E"
+            elif (coord, (0, 1)) in blizzards:
+                line += "v"
+            elif (coord, (0, -1)) in blizzards:
+                line += "^"
+            elif (coord, (1, 0)) in blizzards:
+                line += ">"
+            elif (coord, (-1, 0)) in blizzards:
+                line += "<"
+            else:
+                line += "."
+        print(line)
+
+
 def move_blizzards(blizzards: Blizzards, max_y: int, max_x: int) -> Blizzards:
     new_blizzards = frozenset(
         (((x + dx) % max_x, (y + dy) % max_y), (dx, dy))
@@ -36,14 +55,16 @@ def move_blizzards(blizzards: Blizzards, max_y: int, max_x: int) -> Blizzards:
 
 def iterate(
     blizzards: Blizzards,
+    goals: List[Coord],
     max_x: int,
     max_y: int,
 ) -> int:
     current_blizzards = blizzards
     rounds = 0
-    new_next_positions: List[Coord] = [(0, 0)]
+    new_next_positions: List[Coord] = [(0, -1)]
     next_pos: List[Coord] = []
-    goal = (max_x - 1, max_y)
+    memo: Set[Tuple[Coord, Blizzards]] = set()
+    current_goal = goals.pop(0)
     while True:
         # print(f"Round {rounds}")
         current_blizzards = move_blizzards(current_blizzards, max_y, max_x)
@@ -51,16 +72,29 @@ def iterate(
         next_pos = new_next_positions
         new_next_positions = []
         for (x, y) in next_pos:
+            state = ((x, y), current_blizzards)
+            if state in memo:
+                continue
+            memo.add(state)
             # Check if we the goal is below us
-            if (x, y + 1) == goal:
-                return rounds + 1
-            if (x - 1) >= 0 and ((x - 1), y) not in blizzards_no_direction:
+            if (x, y + 1) == current_goal or (x, y - 1) == current_goal:
+                if len(goals) == 0:
+                    return rounds + 1
+                new_next_positions = [current_goal]
+                current_goal = goals.pop(0)
+                memo = set()
+                break
+            if y >= 0 and (x - 1) >= 0 and ((x - 1), y) not in blizzards_no_direction:
                 # Move left
                 new_next_positions.append((x - 1, y))
-            if (x + 1) < max_x and ((x + 1), y) not in blizzards_no_direction:
+            if (
+                y >= 0
+                and (x + 1) < max_x
+                and ((x + 1), y) not in blizzards_no_direction
+            ):
                 # Move right
                 new_next_positions.append((x + 1, y))
-            if (y - 1) >= 0 and (x, y - 1) not in blizzards_no_direction:
+            if y >= 0 and (y - 1) >= 0 and (x, y - 1) not in blizzards_no_direction:
                 # Move up
                 new_next_positions.append((x, y - 1))
             if (y + 1) < max_y and (x, y + 1) not in blizzards_no_direction:
@@ -76,8 +110,11 @@ def main(input: List[str]) -> None:
     max_y = len(input) - 2
     max_x = len(input[0]) - 2
     blizzards = parse_input(input)
-    min_rounds = iterate(blizzards, max_x, max_y)
-    print(f"Part 1: {min_rounds}")
+    print(f"Part 1: {iterate(blizzards, [(max_x - 1, max_y)], max_x, max_y)}")
+    part2 = iterate(
+        blizzards, [(max_x - 1, max_y), (0, -1), (max_x - 1, max_y)], max_x, max_y
+    )
+    print(f"Part 2: {part2}")
 
 
 if __name__ == "__main__":
