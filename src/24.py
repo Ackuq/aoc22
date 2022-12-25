@@ -84,11 +84,17 @@ def iterate(
                 current_goal = goals.pop(0)
                 memo = set()
                 break
-            if y >= 0 and (x - 1) >= 0 and ((x - 1), y) not in blizzards_no_direction:
+            if (
+                y >= 0
+                and y < max_y
+                and (x - 1) >= 0
+                and ((x - 1), y) not in blizzards_no_direction
+            ):
                 # Move left
                 new_next_positions.append((x - 1, y))
             if (
                 y >= 0
+                and y < max_y
                 and (x + 1) < max_x
                 and ((x + 1), y) not in blizzards_no_direction
             ):
@@ -109,10 +115,12 @@ def iterate(
 def main(input: List[str]) -> None:
     max_y = len(input) - 2
     max_x = len(input[0]) - 2
-    blizzards = parse_input(input)
-    print(f"Part 1: {iterate(blizzards, [(max_x - 1, max_y)], max_x, max_y)}")
+    print(f"Part 1: {iterate(parse_input(input), [(max_x - 1, max_y)], max_x, max_y)}")
     part2 = iterate(
-        blizzards, [(max_x - 1, max_y), (0, -1), (max_x - 1, max_y)], max_x, max_y
+        parse_input(input),
+        [(max_x - 1, max_y), (0, -1), (max_x - 1, max_y)],
+        max_x,
+        max_y,
     )
     print(f"Part 2: {part2}")
 
